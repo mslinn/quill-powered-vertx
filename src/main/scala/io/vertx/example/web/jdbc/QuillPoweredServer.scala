@@ -163,7 +163,7 @@ class QuillPoweredServer extends AbstractVerticle {
       } else {
         val arr: JsonArray = new JsonArray()
         query.result.getRows.asScala.foreach(arr.add)
-        routingContext.response.putHeader("content-type", "application/json").end(arr.encode)
+        routingContext.response.putHeader("content-type", "application/json").end(arr.encodePrettily)
       }
     })
   }
