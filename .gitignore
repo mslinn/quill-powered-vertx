@@ -1,0 +1,14 @@
+.classpath
+*.sublime-*
+*~
+.cache
+.idea/
+.idea_modules/
+.project
+.settings/
+*.iml
+*.log
+*.stackdump
+logs/
+project/target/
+target/
