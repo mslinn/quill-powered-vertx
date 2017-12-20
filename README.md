@@ -53,13 +53,6 @@ Your web browser should show the following when pointed to [http://localhost:808
 ```
 
 ### Make a Fat Jar and Run It
-*This does not work yet:*
-```
-java.lang.IllegalStateException: Cannot find META-INF/services/io.vertx.core.spi.VertxFactory on classpath
-        at io.vertx.core.ServiceHelper.loadFactory(ServiceHelper.java:31)
-        at io.vertx.core.Vertx.<clinit>(Vertx.java:578)
-```
-
 The `bin/run` Bash script assembles this project into a fat jar and runs it.
 Sample usage, which runs the `QuillPoweredServer` entry point in `src/main/scala/io/vertx/example/web/jdbc/QuillPoweredServer.scala`:
 

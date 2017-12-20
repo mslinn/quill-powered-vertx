@@ -2,7 +2,7 @@ organization := "com.micronautics"
 
 name := "quill-powered-vertx-server"
 
-version := "0.1.0"
+version := "0.1.1"
 
 scalaVersion := "2.12.4"
 
@@ -86,8 +86,10 @@ libraryDependencies ++= Seq(
   "io.vertx"          %  "vertx-jdbc-client"    % vertxVersion withSources(),
   "io.vertx"          %% "vertx-web-scala"      % vertxVersion withSources(),
   //
-  "org.scalatest"     %% "scalatest"            % "3.0.4" % Test withSources(),
-  "junit"             %  "junit"                % "4.12"  % Test
+  "com.micronautics"  %% "has-id"            % "1.2.8" % Provided withSources(),
+  //
+  "org.scalatest"     %% "scalatest"         % "3.0.4" % Test withSources(),
+  "junit"             %  "junit"             % "4.12"  % Test
 )
 
 logLevel := Level.Warn
