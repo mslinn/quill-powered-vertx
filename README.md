@@ -3,7 +3,18 @@
 [![Build Status](https://travis-ci.org/mslinn/quill-powered-vertx.svg?branch=master)](https://travis-ci.org/mslinn/quill-powered-vertx)
 [![GitHub version](https://badge.fury.io/gh/mslinn%2Fquill-powered-vertx.svg)](https://badge.fury.io/gh/mslinn%2Fquill-powered-vertx)
 
-This project is built with Scala 2.12, which requires Java 8+.
+This example webapp demonstrates persistence with Scala, vert.x and [quill-cache](https://github.com/mslinn/quill-cache/).
+Authentication is enabled by Vert.x's [JSON web tokens](http://vertx.io/docs/vertx-auth-jwt/scala/).
+
+This project is built with Scala 2.12, which requires Java 8+, 
+[vert.x](http://vertx.io/docs/vertx-jdbc-client/scala/) and 
+[quill-cache](https://github.com/mslinn/quill-cache/).
+
+Vert.x is polyglot by nature, which is important to me, however the approach taken for persistence makes me uncomfortable.
+From the [documentation](http://vertx.io/docs/vertx-jdbc-client/scala/#_data_types): 
+*Due to the fact that Vert.x uses JSON as its standard message format there will be many limitations to the data types accepted by the client.*
+For example, integers, long integers and floats are not supported, just doubles.
+I minimize the use of Vert.x's persistence mechanism as a result.
 
 ## Running the Program
 Start the program, then point a web browser at [http://localhost:8080/products](http://localhost:8080/products)

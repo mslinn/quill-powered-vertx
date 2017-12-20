@@ -15,22 +15,18 @@
  *  You may elect to redistribute this code under either of these licenses.
  */
 
-package io.vertx.example.web.jdbc
+package com.micronautics.vertx
 
 import com.typesafe.config.Config
-import io.vertx.core.{AbstractVerticle, Handler, Vertx}
 import io.vertx.core.http.HttpServerResponse
 import io.vertx.core.json.{JsonArray, JsonObject}
+import io.vertx.core.{AbstractVerticle, Handler, Vertx}
 import io.vertx.ext.jdbc.JDBCClient
 import io.vertx.ext.sql.SQLConnection
 import io.vertx.ext.web.handler.BodyHandler
 import io.vertx.ext.web.{Router, RoutingContext}
 import model.persistence._
 import org.h2.tools.Server
-
-trait SelectedCtx extends model.persistence.H2Ctx
-
-case object Ctx extends SelectedCtx with QuillCacheImplicits
 
 object QuillPoweredServer extends App with ConfigParse {
   protected val h2Config: Config = model.persistence.ConfigParse.config.getConfig("h2")
@@ -48,9 +44,6 @@ object QuillPoweredServer extends App with ConfigParse {
   new QuillPoweredServer().start()
 }
 
-/**
- * @author <a href="mailto:mslinn@gmail.com">Mike Slinn</a>
- */
 class QuillPoweredServer extends AbstractVerticle {
   vertx = Vertx.vertx()
 
