@@ -85,6 +85,8 @@ libraryDependencies ++= Seq(
   "io.vertx"          %  "vertx-jdbc-client" % vertxVersion withSources(),
   "io.vertx"          %% "vertx-web-scala"   % vertxVersion withSources(),
   //
+  "com.micronautics"  %% "has-id"            % "1.2.8" % Provided withSources(),
+  //
   "org.scalatest"     %% "scalatest"         % "3.0.4" % Test withSources(),
   "junit"             %  "junit"             % "4.12"  % Test
 )
