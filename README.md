@@ -58,7 +58,7 @@ Your web browser should show the following when pointed to [http://localhost:808
 
 ### Make a Fat Jar and Run It
 The `bin/run` Bash script assembles this project into a fat jar and runs it.
-Sample usage, which runs the `QuillPoweredServer` entry point in `src/main/scala/io/vertx/example/web/jdbc/QuillPoweredServer.scala`:
+Sample usage, which runs the `Main` entry point in `com/micronautics/vertx/QuillPoweredServer.scala`:
 
 ```
 $ bin/run 
