@@ -1,10 +1,14 @@
-# Scala Project Template
+# Vert.x Web Scala Template
+
+<img src='https://raw.githubusercontent.com/mslinn/quill-powered-vertx/gh-pages/images/redHat.jpg' align='right' width='20%'>
 
 [![Build Status](https://travis-ci.org/mslinn/quill-powered-vertx.svg?branch=master)](https://travis-ci.org/mslinn/quill-powered-vertx)
 [![GitHub version](https://badge.fury.io/gh/mslinn%2Fquill-powered-vertx.svg)](https://badge.fury.io/gh/mslinn%2Fquill-powered-vertx)
 
 This example webapp demonstrates persistence with Scala, vert.x and [quill-cache](https://github.com/mslinn/quill-cache/).
 Authentication is enabled by Vert.x's [JSON web tokens](http://vertx.io/docs/vertx-auth-jwt/scala/).
+
+>>>>>>> master
 
 This project is built with Scala 2.12, which requires Java 8+, 
 [vert.x](http://vertx.io/docs/vertx-jdbc-client/scala/) and 
