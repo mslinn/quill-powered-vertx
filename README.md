@@ -12,11 +12,13 @@ This project is built with Scala 2.12, which requires Java 8+,
 [vert.x](http://vertx.io/docs/vertx-jdbc-client/scala/) and 
 [quill-cache](https://github.com/mslinn/quill-cache/).
 
-Vert.x is polyglot by nature, which is important to me, however the approach taken for persistence makes me uncomfortable.
+Vert.x is polyglot by nature, which is important to me, however the approach taken for persistence 
+(as I currently understand it) makes me uncomfortable.
 From the [documentation](http://vertx.io/docs/vertx-jdbc-client/scala/#_data_types): 
 *Due to the fact that Vert.x uses JSON as its standard message format there will be many limitations to the data types accepted by the client.*
 For example, integers, long integers and floats are not supported, just doubles.
 I minimize the use of Vert.x's persistence mechanism as a result.
+It is possible, or even likely, that as my understanding of vert.x increases I may adopt a different opinion.
 
 ## Running the Program
 Start the program, then point a web browser at [http://localhost:8080/products](http://localhost:8080/products)
