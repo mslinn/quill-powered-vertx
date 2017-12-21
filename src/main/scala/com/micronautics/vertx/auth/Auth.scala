@@ -79,6 +79,7 @@ class Auth(vertx: Vertx) {
     token
   }
 
+  // todo figure out how this stuff works. No docs of any kind anywhere, AFAIK!
   /*def authenticatedUser(bearerToken: BearerToken): Option[User] =
     bearerToken.value.authenticateFuture(new io.vertx.core.json.JsonObject().put("jwt", "BASE64-ENCODED-STRING")).onComplete{
     case Success(result) => {
