@@ -96,7 +96,8 @@ class QuillPoweredVertx extends ScalaVerticle with Routes with RouteHandlers {
 
       val conn: SQLConnection = res.result
 
-      conn.execute("DELETE FROM products", ddl => {}) // wipe out any previous data
+      // wipe out any previous data
+      conn.execute("DELETE FROM products", ddl => { if (ddl.failed) throw new RuntimeException(ddl.cause) })
 
       conn.execute("CREATE TABLE IF NOT EXISTS products(id INT IDENTITY, name VARCHAR(255), price FLOAT, weight INT)", ddl => {
         if (ddl.failed)
@@ -106,7 +107,7 @@ class QuillPoweredVertx extends ScalaVerticle with Routes with RouteHandlers {
           if (fixtures.failed)
             throw new RuntimeException(fixtures.cause())
 
-          done.handle(null) // todo does this make sense?
+          done.handle(null)
         })
       })
     })
@@ -196,5 +197,7 @@ protected trait RouteHandlers {
   }
 
   protected def sendError(statusCode: Int, response: HttpServerResponse): Unit =
-    response.setStatusCode(statusCode).end()
+    response
+      .setStatusCode(statusCode)
+      .end()
 }
