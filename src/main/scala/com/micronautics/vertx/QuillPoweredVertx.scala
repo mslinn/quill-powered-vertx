@@ -32,7 +32,88 @@ import model.persistence._
 import org.h2.tools.Server
 import scala.collection.JavaConverters._
 
-object QuillPoweredServer extends App with ConfigParse {
+object Main extends App {
+  QuillPoweredVertx()
+}
+
+object QuillPoweredVertx extends ConfigParse with PersistenceLike {
+  def apply(): Unit = new QuillPoweredVertx().start()
+}
+
+class QuillPoweredVertx extends ScalaVerticle with Routes with RouteHandlers {
+  vertx = Vertx.vertx()
+
+  private var _client: Option[JDBCClient] = None
+
+  def client: JDBCClient = _client.getOrElse {
+    val result = JDBCClient(JJDBCClient.create(vertx.asJava.asInstanceOf[io.vertx.core.Vertx], Ctx.dataSource))
+    _client = Some(result)
+    result
+  }
+
+  override def start(): Unit = {
+    setUpInitialData(_ => {
+      val router = Router.router(vertx)
+      router.route.handler(BodyHandler.create)
+
+      router.route(s"$routeStem*").handler(routingContext =>
+        client.getConnection(res => {
+          if (res.failed) {
+            routingContext.fail(res.cause)
+          } else {
+            val conn: SQLConnection = res.result
+
+            // save the connection on the context
+            routingContext.put("conn", conn)
+
+            // The connection must be closed in order to return it to the JDBC pool.
+            routingContext.addHeadersEndHandler(_ => conn.close(_ => {}))
+            routingContext.next()
+          }
+        })
+      ).failureHandler(routingContext => {
+        val conn: SQLConnection = routingContext.get("conn")
+        if (conn != null)
+          conn.close(_ => {})
+      })
+
+      router.get(s"$routeStem/:productID").handler(handleGetProduct)
+      router.post(routeStem).handler(handleAddProduct)
+      router.get(routeStem).handler(handleListProducts)
+
+      vertx
+        .createHttpServer
+        .requestHandler(router.accept(_))
+        .listen(8080)
+    })
+  }
+
+  // todo use evolutions instead
+  protected def setUpInitialData(done: Handler[Unit]): Unit = {
+    client.getConnection(res => {
+      if (res.failed)
+        throw new RuntimeException(res.cause)
+
+      val conn: SQLConnection = res.result
+
+      conn.execute("DELETE FROM products", ddl => {}) // wipe out any previous data
+
+      conn.execute("CREATE TABLE IF NOT EXISTS products(id INT IDENTITY, name VARCHAR(255), price FLOAT, weight INT)", ddl => {
+        if (ddl.failed)
+          throw new RuntimeException(ddl.cause)
+
+        conn.execute("INSERT INTO products (name, price, weight) VALUES ('Egg Whisk', 3.99, 150), ('Tea Cosy', 5.99, 100), ('Spatula', 1.00, 80)", fixtures => {
+          if (fixtures.failed)
+            throw new RuntimeException(fixtures.cause())
+
+          done.handle(null) // todo does this make sense?
+        })
+      })
+    })
+  }
+}
+
+protected trait PersistenceLike {
   protected val h2Config: Config = model.persistence.ConfigParse.config.getConfig("h2")
   protected val dataSource: Config = h2Config.getConfig("dataSource")
   protected val url: String = dataSource.getString("url")
@@ -44,64 +125,15 @@ object QuillPoweredServer extends App with ConfigParse {
   val processEvolution = new ProcessEvolution(resourcePath, fallbackPath)
   processEvolution.downs(Ctx) // just in case something was left over from last time
   processEvolution.ups(Ctx)
-
-  new QuillPoweredServer().start()
 }
 
-class QuillPoweredServer extends ScalaVerticle {
-  vertx = Vertx.vertx()
+protected trait Routes {
+  val routeStem = "/products"
+}
 
-  private var _client: Option[JDBCClient] = None
-
-  // Create a JDBC client with a test database
-  def client: JDBCClient = _client.getOrElse {
-    val result = JDBCClient(JJDBCClient.create(vertx.asJava.asInstanceOf[io.vertx.core.Vertx], Ctx.dataSource))
-    _client = Some(result)
-    result
-  }
-
-  override def start(): Unit = {
-    val thisServer: QuillPoweredServer = this
-
-    setUpInitialData(_ => {
-      val router = Router.router(vertx)
-      router.route.handler(BodyHandler.create)
-
-      // in order to minimize the nesting of call backs we can put the JDBC connection on the context for all routes
-      // that match /products
-      // this should really be encapsulated in a reusable JDBC handler that uses can just add to their app
-      router.route("/products*").handler(routingContext => client.getConnection(res => {
-        if (res.failed()) {
-          routingContext.fail(res.cause)
-        } else {
-          val conn: SQLConnection = res.result
-
-          // save the connection on the context
-          routingContext.put("conn", conn)
-
-          // we need to return the connection back to the jdbc pool. In order to do that we need to close it, to keep
-          // the remaining code readable one can add a headers end handler to close the connection.
-          routingContext.addHeadersEndHandler(_ => conn.close(_ => { }))
-          routingContext.next()
-        }
-      })).failureHandler(routingContext => {
-        val conn: SQLConnection = routingContext.get("conn")
-        if (conn != null)
-          conn.close(_ => {})
-      })
-
-      router.get("/products/:productID").handler(thisServer.handleGetProduct)
-      router.post("/products").handler(thisServer.handleAddProduct)
-      router.get("/products").handler(thisServer.handleListProducts)
-
-      vertx
-        .createHttpServer
-        .requestHandler(router.accept(_))
-        .listen(8080)
-    })
-  }
-
-  private def handleGetProduct(routingContext: RoutingContext): Unit = {
+protected trait RouteHandlers {
+  // todo use quill instead of raw sql
+  protected def handleGetProduct(routingContext: RoutingContext): Unit = {
     val productID: Option[String] = routingContext.request.getParam("productID")
     val response: HttpServerResponse = routingContext.response
     if (productID.isEmpty) {
@@ -128,7 +160,8 @@ class QuillPoweredServer extends ScalaVerticle {
     }.get
   }
 
-  private def handleAddProduct(routingContext: RoutingContext): Unit = {
+  // todo use quill instead of raw sql
+  protected def handleAddProduct(routingContext: RoutingContext): Unit = {
     val response: HttpServerResponse = routingContext.response
     val conn: SQLConnection = routingContext.get("conn")
     routingContext.getBodyAsJson foreach { product: JsonObject =>
@@ -147,7 +180,8 @@ class QuillPoweredServer extends ScalaVerticle {
     }
   }
 
-  private def handleListProducts(routingContext: RoutingContext): Unit = {
+  // todo use quill instead of raw sql
+  protected def handleListProducts(routingContext: RoutingContext): Unit = {
     val response: HttpServerResponse = routingContext.response
     val conn: SQLConnection = routingContext.get("conn")
     conn.query("SELECT id, name, price, weight FROM products", query => {
@@ -161,27 +195,6 @@ class QuillPoweredServer extends ScalaVerticle {
     })
   }
 
-  private def sendError(statusCode: Int, response: HttpServerResponse): Unit =
+  protected def sendError(statusCode: Int, response: HttpServerResponse): Unit =
     response.setStatusCode(statusCode).end()
-
-  private def setUpInitialData(done: Handler[Unit]): Unit = {
-    client.getConnection(res => {
-      if (res.failed)
-        throw new RuntimeException(res.cause)
-
-      val conn: SQLConnection = res.result
-
-      conn.execute("CREATE TABLE IF NOT EXISTS products(id INT IDENTITY, name VARCHAR(255), price FLOAT, weight INT)", ddl => {
-        if (ddl.failed)
-          throw new RuntimeException(ddl.cause)
-
-        conn.execute("INSERT INTO products (name, price, weight) VALUES ('Egg Whisk', 3.99, 150), ('Tea Cosy', 5.99, 100), ('Spatula', 1.00, 80)", fixtures => {
-          if (fixtures.failed)
-            throw new RuntimeException(fixtures.cause())
-
-          done.handle(null) // todo does this make sense?
-        })
-      })
-    })
-  }
 }
