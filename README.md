@@ -8,8 +8,6 @@
 This example webapp demonstrates persistence with Scala, vert.x and [quill-cache](https://github.com/mslinn/quill-cache/).
 Authentication is enabled by Vert.x's [JSON web tokens](http://vertx.io/docs/vertx-auth-jwt/scala/).
 
->>>>>>> master
-
 This project is built with Scala 2.12, which requires Java 8+, 
 [vert.x](http://vertx.io/docs/vertx-jdbc-client/scala/) and 
 [quill-cache](https://github.com/mslinn/quill-cache/).
