@@ -80,7 +80,7 @@ val vertxVersion = "3.5.0"
 libraryDependencies ++= Seq(
   "ch.qos.logback"    %  "logback-classic"         % "1.2.3",
   "com.h2database"    %  "h2"                      % "1.4.196"    withSources(),
-  "com.micronautics"  %% "quill-cache"             % "3.5.4"      withSources(),
+  "com.micronautics"  %% "quill-cache"             % "3.5.5"      withSources(),
   "io.vertx"          %% "vertx-auth-jwt-scala"    % vertxVersion withSources(),
   "io.vertx"          %  "vertx-core"              % vertxVersion withSources(),
   "io.vertx"          %% "vertx-jdbc-client-scala" % vertxVersion withSources(),
