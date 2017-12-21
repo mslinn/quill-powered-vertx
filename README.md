@@ -16,10 +16,10 @@ $ sbt run
 [info] Loading global plugins from /home/mslinn/.sbt/0.13/plugins
 [info] Loading project definition from /mnt/_/work/experiments/vertx/quill-powered-vertx/project
 [info] Set current project to quill-powered-vertx-server (in build file:/mnt/_/work/experiments/vertx/quill-powered-vertx/)
-WARN  persistence - Got 1 down lines from evolutions/1.sql:]
+WARN  persistence - Got 1 down lines from evolutions/1.sql:
 
 DROP TABLE IF EXISTS "products" CASCADE;
-WARN  persistence - Got 1 up lines from evolutions/1.sql:]
+WARN  persistence - Got 1 up lines from evolutions/1.sql:
 
 Dec 19, 2017 2:22:25 PM io.vertx.core.spi.resolver.ResolverProvider
 INFO: Using the default address resolver as the dns resolver could not be loaded
