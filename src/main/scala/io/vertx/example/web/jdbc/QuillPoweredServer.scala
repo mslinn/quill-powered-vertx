@@ -18,15 +18,19 @@
 package io.vertx.example.web.jdbc
 
 import com.typesafe.config.Config
-import io.vertx.core.{AbstractVerticle, Handler, Vertx}
-import io.vertx.core.http.HttpServerResponse
+import io.vertx.core.Handler
 import io.vertx.core.json.{JsonArray, JsonObject}
-import io.vertx.ext.jdbc.JDBCClient
-import io.vertx.ext.sql.SQLConnection
-import io.vertx.ext.web.handler.BodyHandler
-import io.vertx.ext.web.{Router, RoutingContext}
+import io.vertx.ext.jdbc.{JDBCClient => JJDBCClient}
+import io.vertx.lang.scala.ScalaVerticle
+import io.vertx.scala.core.Vertx
+import io.vertx.scala.core.http.HttpServerResponse
+import io.vertx.scala.ext.jdbc.JDBCClient
+import io.vertx.scala.ext.sql.{ResultSet, SQLConnection}
+import io.vertx.scala.ext.web.handler.BodyHandler
+import io.vertx.scala.ext.web.{Router, RoutingContext}
 import model.persistence._
 import org.h2.tools.Server
+import scala.collection.JavaConverters._
 
 trait SelectedCtx extends model.persistence.H2Ctx
 
@@ -51,14 +55,14 @@ object QuillPoweredServer extends App with ConfigParse {
 /**
  * @author <a href="mailto:mslinn@gmail.com">Mike Slinn</a>
  */
-class QuillPoweredServer extends AbstractVerticle {
+class QuillPoweredServer extends ScalaVerticle {
   vertx = Vertx.vertx()
 
   private var _client: Option[JDBCClient] = None
 
   // Create a JDBC client with a test database
   def client: JDBCClient = _client.getOrElse {
-    val result = JDBCClient.create(vertx, Ctx.dataSource)
+    val result = JDBCClient(JJDBCClient.create(vertx.asJava.asInstanceOf[io.vertx.core.Vertx], Ctx.dataSource))
     _client = Some(result)
     result
   }
@@ -105,64 +109,60 @@ class QuillPoweredServer extends AbstractVerticle {
   }
 
   private def handleGetProduct(routingContext: RoutingContext): Unit = {
-    val productID: String = routingContext.request.getParam("productID")
+    val productID: Option[String] = routingContext.request.getParam("productID")
     val response: HttpServerResponse = routingContext.response
-    if (productID == null) {
+    if (productID.isEmpty) {
       sendError(400, response)
-    } else {
+    } else productID.map { id =>
       val conn: SQLConnection = routingContext.get("conn")
       conn.queryWithParams(
         "SELECT id, name, price, weight FROM products where id = ?",
-        new JsonArray().add(Integer.parseInt(productID)),
+        new JsonArray().add(Integer.parseInt(id)),
         query => {
           if (query.failed()) {
             sendError(500, response)
           } else {
-            if (query.result.getNumRows == 0) {
+            if (query.result.asJava.getNumRows == 0) {
               sendError(404, response)
             } else {
               response
                 .putHeader("content-type", "application/json")
-                .end(query.result.getRows.get(0).encode)
+                .end(query.result.asJava.getRows.get(0).encode)
             }
           }
         }
       )
-    }
+    }.get
   }
 
   private def handleAddProduct(routingContext: RoutingContext): Unit = {
     val response: HttpServerResponse = routingContext.response
     val conn: SQLConnection = routingContext.get("conn")
-    val product: JsonObject = routingContext.getBodyAsJson
-
-    conn.updateWithParams("INSERT INTO products (name, price, weight) VALUES (?, ?, ?)",
-      new JsonArray()
-        .add(product.getString("name"))
-        .add(product.getFloat("price"))
-        .add(product.getInteger("weight")),
-      query => {
-        if (query.failed()) {
-          sendError(500, response)
-        } else {
-          response.end()
+    routingContext.getBodyAsJson foreach { product: JsonObject =>
+      conn.updateWithParams("INSERT INTO products (name, price, weight) VALUES (?, ?, ?)",
+        new JsonArray()
+          .add(product.getString("name"))
+          .add(product.getFloat("price"))
+          .add(product.getInteger("weight")),
+        query => {
+          if (query.failed)
+            sendError(500, response)
+          else
+            response.end
         }
-      }
-    )
+      )
+    }
   }
 
   private def handleListProducts(routingContext: RoutingContext): Unit = {
-    import scala.collection.JavaConverters._
-
     val response: HttpServerResponse = routingContext.response
     val conn: SQLConnection = routingContext.get("conn")
-
     conn.query("SELECT id, name, price, weight FROM products", query => {
       if (query.failed) {
         sendError(500, response)
       } else {
         val arr: JsonArray = new JsonArray()
-        query.result.getRows.asScala.foreach(arr.add)
+        query.result.asJava.getRows.asScala.foreach(arr.add)
         routingContext.response.putHeader("content-type", "application/json").end(arr.encodePrettily)
       }
     })
