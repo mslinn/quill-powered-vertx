@@ -19,9 +19,11 @@ package com.micronautics.vertx.auth
 
 import io.vertx.lang.scala.json.JsonObject
 import io.vertx.scala.core.Vertx
-import io.vertx.scala.ext.auth.KeyStoreOptions
 import io.vertx.scala.ext.auth.jwt.{JWTAuth, JWTAuthOptions, JWTOptions}
-import scala.sys.process.{Process,ProcessBuilder}
+import io.vertx.scala.ext.auth.{AuthProvider, KeyStoreOptions, User}
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.sys.process.Process
 
 /** @see See [[http://vertx.io/docs/vertx-auth-jwt/scala/ The JWT auth provider]] in the Vert.x documentation */
 object Auth {
@@ -57,10 +59,11 @@ object BearerToken {
       "-keystore", "keystore.jceks",
       "-storetype", "jceks",
       "-storepass", storeSecret,
-      "-keyalg", "HMacSHA256",
-      "-keysize", "2048",
-      "-alias", "HS256",
-      "-keypass", keySecret)
+      "-keyalg",    "HMacSHA256",
+      "-keysize",   "2048",
+      "-alias",     "HS256",
+      "-keypass",   keySecret
+    )
 }
 
 case class BearerToken(value: String) extends AnyVal
@@ -68,7 +71,7 @@ case class BearerToken(value: String) extends AnyVal
 class Auth(vertx: Vertx) {
   import com.micronautics.vertx.auth.Auth._
 
-  val provider: JWTAuth = JWTAuth.create(vertx, config)
+  lazy val provider: JWTAuth = JWTAuth.create(vertx, config)
 
   /** For any request to protected resources, pass the returned value from this method in the HTTP `Authorization` header as:
     * {{{Authorization: Bearer <token>}}}
@@ -80,13 +83,12 @@ class Auth(vertx: Vertx) {
   }
 
   // todo figure out how this stuff works. No docs of any kind anywhere, AFAIK!
-  /*def authenticatedUser(bearerToken: BearerToken): Option[User] =
-    bearerToken.value.authenticateFuture(new io.vertx.core.json.JsonObject().put("jwt", "BASE64-ENCODED-STRING")).onComplete{
-    case Success(result) => {
-      var theUser = result
+  def authenticatedUser(bearerToken: BearerToken, authProvider: AuthProvider): Option[User] =
+    try {
+      val user = Await.result(authProvider.authenticateFuture(new JsonObject().put("jwt", "BASE64-ENCODED-STRING")), Duration.Inf)
+      //if (user.isAuthorised("whatGoesHere?", "whatGoesHere?")) Some(user) else None  // todo figure this out
+      None // make compiler happy for now
+    } catch {
+      case _: Exception => None
     }
-    case Failure(cause) => {
-      println(s"$cause")
-    }
-  }*/
 }
