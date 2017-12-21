@@ -79,7 +79,7 @@ class Auth(vertx: Vertx) {
     token
   }
 
-  def authenticatedUser(bearerToken: BearerToken): Option[User] =
+  /*def authenticatedUser(bearerToken: BearerToken): Option[User] =
     bearerToken.value.authenticateFuture(new io.vertx.core.json.JsonObject().put("jwt", "BASE64-ENCODED-STRING")).onComplete{
     case Success(result) => {
       var theUser = result
@@ -87,5 +87,5 @@ class Auth(vertx: Vertx) {
     case Failure(cause) => {
       println(s"$cause")
     }
-  }
+  }*/
 }
