@@ -83,8 +83,6 @@ libraryDependencies ++= Seq(
   "com.micronautics"  %% "quill-cache"             % "3.5.3"      withSources(),
   "io.vertx"          %% "vertx-auth-jwt-scala"    % vertxVersion withSources(),
   "io.vertx"          %  "vertx-core"              % vertxVersion withSources(),
-  "ch.qos.logback"    %  "logback-classic"         % "1.2.3",
-  "com.h2database"    %  "h2"                      % "1.4.196"    withSources(),
   "io.vertx"          %% "vertx-jdbc-client-scala" % vertxVersion withSources(),
   "io.vertx"          %% "vertx-web-scala"         % vertxVersion withSources(),
   //
