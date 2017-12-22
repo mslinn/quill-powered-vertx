@@ -27,18 +27,14 @@ $ sbt run
 [info] Loading project definition from /mnt/_/work/experiments/vertx/quill-powered-vertx/project
 [info] Set current project to quill-powered-vertx-server (in build file:/mnt/_/work/experiments/vertx/quill-powered-vertx/)
 WARN  persistence - Got 1 down lines from evolutions/1.sql:
-<<<<<<< HEAD
-
-DROP TABLE IF EXISTS "products" CASCADE;
-WARN  persistence - Got 1 up lines from evolutions/1.sql:
-=======
-DROP TABLE IF EXISTS "products" CASCADE;
-WARN  persistence - Got 0 up lines from evolutions/1.sql
->>>>>>> wip
-
+DROP TABLE IF EXISTS "product" CASCADE;
+WARN  persistence - Got 4 up lines from evolutions/1.sql:
+DROP TABLE IF EXISTS "product" CASCADE;
+CREATE TABLE IF NOT EXISTS "product" (id INT IDENTITY, name VARCHAR(255), price FLOAT, weight INT);
+DELETE FROM "product";
+INSERT INTO "product" (name, price, weight) VALUES ('Egg Whisk', 3.99, 150), ('Tea Cosy', 5.99, 100), ('Spatula', 1.00, 80);
 Dec 19, 2017 2:22:25 PM io.vertx.core.spi.resolver.ResolverProvider
 INFO: Using the default address resolver as the dns resolver could not be loaded
-```
 
 Your web browser should show the following when pointed to [http://localhost:8080/products](http://localhost:8080/products):
 ```

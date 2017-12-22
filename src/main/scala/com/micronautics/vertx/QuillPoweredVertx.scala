@@ -79,8 +79,6 @@ protected trait PersistenceLike {
 
   val downsLines: Seq[String] = processEvolution.downsLines(Ctx)
   val upsLines: Seq[String]   = processEvolution.upsLines(Ctx)
-  println(downsLines.mkString("Downs: ", "\n", ""))
-  println(upsLines.mkString("Ups: ", "\n", ""))
 
   processEvolution.downs(Ctx) // just in case something was left over from last time
   processEvolution.ups(Ctx)
