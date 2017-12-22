@@ -35,7 +35,7 @@ DELETE FROM "product";
 INSERT INTO "product" (name, price, weight) VALUES ('Egg Whisk', 3.99, 150), ('Tea Cosy', 5.99, 100), ('Spatula', 1.00, 80);
 Dec 19, 2017 2:22:25 PM io.vertx.core.spi.resolver.ResolverProvider
 INFO: Using the default address resolver as the dns resolver could not be loaded
-
+```
 Your web browser should show the following when pointed to [http://localhost:8080/products](http://localhost:8080/products):
 ```
 [ {
