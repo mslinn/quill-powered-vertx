@@ -2,7 +2,7 @@ organization := "com.micronautics"
 
 name := "quill-powered-vertx-server"
 
-version := "0.1.0"
+version := "0.1.1"
 
 scalaVersion := "2.12.4"
 
@@ -80,7 +80,9 @@ val vertxVersion = "3.5.0"
 libraryDependencies ++= Seq(
   "ch.qos.logback"    %  "logback-classic"         % "1.2.3",
   "com.h2database"    %  "h2"                      % "1.4.196"    withSources(),
-  "com.micronautics"  %% "quill-cache"             % "3.5.5"      withSources(),
+  "com.micronautics"  %% "quill-cache"             % "3.5.9"      withSources(),
+  "com.micronautics"  %% "scala-sig"               % "0.1.5"      withSources(),
+  "io.vertx"          %% "vertx-auth-jwt-scala"    % vertxVersion withSources(),
   "io.vertx"          %  "vertx-core"              % vertxVersion withSources(),
   "io.vertx"          %% "vertx-jdbc-client-scala" % vertxVersion withSources(),
   "io.vertx"          %% "vertx-web-scala"         % vertxVersion withSources(),
