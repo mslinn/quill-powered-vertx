@@ -17,13 +17,13 @@
 
 package com.micronautics.vertx.auth
 
+import com.micronautics.sig.JWT
 import io.vertx.lang.scala.json.JsonObject
 import io.vertx.scala.core.Vertx
 import io.vertx.scala.ext.auth.jwt.{JWTAuth, JWTAuthOptions, JWTOptions}
 import io.vertx.scala.ext.auth.{AuthProvider, KeyStoreOptions, User}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scala.sys.process.Process
 
 /** @see See [[http://vertx.io/docs/vertx-auth-jwt/scala/ The JWT auth provider]] in the Vert.x documentation */
 object Auth {
@@ -37,37 +37,6 @@ object Auth {
       .setKeyStore(keyStoreOptions)
 }
 
-/*
-keytool -genseckey -keystore keystore.jceks -storetype jceks -storepass secret -keyalg HMacSHA256 -keysize 2048 -alias HS256 -keypass secret
-keytool -genseckey -keystore keystore.jceks -storetype jceks -storepass secret -keyalg HMacSHA384 -keysize 2048 -alias HS384 -keypass secret
-keytool -genseckey -keystore keystore.jceks -storetype jceks -storepass secret -keyalg HMacSHA512 -keysize 2048 -alias HS512 -keypass secret
-keytool -genkey -keystore keystore.jceks -storetype jceks -storepass secret -keyalg RSA -keysize 2048 -alias RS256 -keypass secret -sigalg SHA256withRSA -dname "CN=,OU=,O=,L=,ST=,C=" -validity 360
-keytool -genkey -keystore keystore.jceks -storetype jceks -storepass secret -keyalg RSA -keysize 2048 -alias RS384 -keypass secret -sigalg SHA384withRSA -dname "CN=,OU=,O=,L=,ST=,C=" -validity 360
-keytool -genkey -keystore keystore.jceks -storetype jceks -storepass secret -keyalg RSA -keysize 2048 -alias RS512 -keypass secret -sigalg SHA512withRSA -dname "CN=,OU=,O=,L=,ST=,C=" -validity 360
-keytool -genkeypair -keystore keystore.jceks -storetype jceks -storepass secret -keyalg EC -keysize 256 -alias ES256 -keypass secret -sigalg SHA256withECDSA -dname "CN=,OU=,O=,L=,ST=,C=" -validity 360
-keytool -genkeypair -keystore keystore.jceks -storetype jceks -storepass secret -keyalg EC -keysize 384 -alias ES384 -keypass secret -sigalg SHA384withECDSA -dname "CN=,OU=,O=,L=,ST=,C=" -validity 360
-keytool -genkeypair -keystore keystore.jceks -storetype jceks -storepass secret -keyalg EC -keysize 521 -alias ES512 -keypass secret -sigalg SHA512withECDSA -dname "CN=,OU=,O=,L=,ST=,C=" -validity 360
-*/
-object BearerToken {
-  implicit def stringToBearerToken(string: String): BearerToken = BearerToken(string)
-
-  def run(cmd: String*): String = Process(cmd).!!.trim
-
-  def keytool(storeSecret: String, keySecret: String): String =
-    run("keytool",
-      "-genseckey",
-      "-keystore", "keystore.jceks",
-      "-storetype", "jceks",
-      "-storepass", storeSecret,
-      "-keyalg",    "HMacSHA256",
-      "-keysize",   "2048",
-      "-alias",     "HS256",
-      "-keypass",   keySecret
-    )
-}
-
-case class BearerToken(value: String) extends AnyVal
-
 class Auth(vertx: Vertx) {
   import com.micronautics.vertx.auth.Auth._
 
@@ -76,14 +45,14 @@ class Auth(vertx: Vertx) {
   /** For any request to protected resources, pass the returned value from this method in the HTTP `Authorization` header as:
     * {{{Authorization: Bearer <token>}}}
     * @see See [[https://en.wikipedia.org/wiki/JSON_Web_Token#Standard_fields Standard JWT Fields]] */
-  def tokenFrom(userName: String, password: String): BearerToken = {
+  def tokenFrom(userName: String, password: String): JWT = {
     val jsonObject = new JsonObject().put("sub", userName)
-    val token: BearerToken = provider.generateToken(jsonObject, JWTOptions())
+    val token: JWT = provider.generateToken(jsonObject, JWTOptions())
     token
   }
 
   // todo figure out how this stuff works. No docs of any kind anywhere, AFAIK!
-  def authenticatedUser(bearerToken: BearerToken, authProvider: AuthProvider): Option[User] =
+  def authenticatedUser(bearerToken: JWT, authProvider: AuthProvider): Option[User] =
     try {
       val user = Await.result(authProvider.authenticateFuture(new JsonObject().put("jwt", "BASE64-ENCODED-STRING")), Duration.Inf)
       //if (user.isAuthorised("whatGoesHere?", "whatGoesHere?")) Some(user) else None  // todo figure this out
