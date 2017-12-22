@@ -39,11 +39,11 @@
   <logger name="akka.actor" level="{LOGGER_AKKA_ACTOR:-INFO}" additivity="false">
     <appender-ref ref="CONFIG" />
   </logger>
-  <logger name="CachedPersistence"      level="${LOGGER_PERSIST:-WARN}" />
+  <logger name="CachedPersistence"      level="${LOGGER_PERSIST:-DEBUG}" />
   <logger name="com.zaxxer.hikari"      level="${LOGGER_HIKARI:-WARN}"/>
   <logger name="com.zaxxer.hikari.pool" level="${LOGGER_HIKARI_POOL:-WARN}"/>
   <logger name="persistence"            level="${LOGGER_PERSISTENCE:-WARN}"/>
-  <logger name="testDbFixture"          level="${LOGGER_TEST_DB:-WARN}" />
+  <logger name="io.vertx.ext.web.impl.RoutingContextImplBase" level="${LOGGER_PERSISTENCE:-TRACE}"/>
 
   <root level="WARN">
     <appender-ref ref="STDOUT" />

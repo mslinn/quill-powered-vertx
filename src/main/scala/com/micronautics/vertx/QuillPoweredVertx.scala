@@ -17,8 +17,9 @@
 
 package com.micronautics.vertx
 
+import _root_.model.persistence._
+import com.micronautics.vertx.model.{Product, Products}
 import com.typesafe.config.Config
-import io.vertx.core.Handler
 import io.vertx.core.json.{JsonArray, JsonObject}
 import io.vertx.ext.jdbc.{JDBCClient => JJDBCClient}
 import io.vertx.lang.scala.ScalaVerticle
@@ -28,7 +29,6 @@ import io.vertx.scala.ext.jdbc.JDBCClient
 import io.vertx.scala.ext.sql.SQLConnection
 import io.vertx.scala.ext.web.handler.BodyHandler
 import io.vertx.scala.ext.web.{Router, RoutingContext}
-import model.persistence._
 import org.h2.tools.Server
 import scala.collection.JavaConverters._
 
@@ -52,70 +52,22 @@ class QuillPoweredVertx extends ScalaVerticle with Routes with RouteHandlers {
   }
 
   override def start(): Unit = {
-    setUpInitialData(_ => {
-      val router = Router.router(vertx)
-      router.route.handler(BodyHandler.create)
+    val router = Router.router(vertx)
+    router.route.handler(BodyHandler.create)
 
-      router.route(s"$routeStem*").handler(routingContext =>
-        client.getConnection(res => {
-          if (res.failed) {
-            routingContext.fail(res.cause)
-          } else {
-            val conn: SQLConnection = res.result
+    router.get(s"$routeStem/:productID").handler(handleGetProduct)
+    router.post(routeStem).handler(handleAddProduct)
+    router.get(routeStem).handler(handleListProducts)
 
-            // save the connection on the context
-            routingContext.put("conn", conn)
-
-            // The connection must be closed in order to return it to the JDBC pool.
-            routingContext.addHeadersEndHandler(_ => conn.close(_ => {}))
-            routingContext.next()
-          }
-        })
-      ).failureHandler(routingContext => {
-        val conn: SQLConnection = routingContext.get("conn")
-        if (conn != null)
-          conn.close(_ => {})
-      })
-
-      router.get(s"$routeStem/:productID").handler(handleGetProduct)
-      router.post(routeStem).handler(handleAddProduct)
-      router.get(routeStem).handler(handleListProducts)
-
-      vertx
-        .createHttpServer
-        .requestHandler(router.accept(_))
-        .listen(8080)
-    })
-  }
-
-  // todo use evolutions instead
-  protected def setUpInitialData(done: Handler[Unit]): Unit = {
-    client.getConnection(res => {
-      if (res.failed)
-        throw new RuntimeException(res.cause)
-
-      val conn: SQLConnection = res.result
-
-      // wipe out any previous data
-      conn.execute("DELETE FROM products", ddl => { if (ddl.failed) throw new RuntimeException(ddl.cause) })
-
-      conn.execute("CREATE TABLE IF NOT EXISTS products(id INT IDENTITY, name VARCHAR(255), price FLOAT, weight INT)", ddl => {
-        if (ddl.failed)
-          throw new RuntimeException(ddl.cause)
-
-        conn.execute("INSERT INTO products (name, price, weight) VALUES ('Egg Whisk', 3.99, 150), ('Tea Cosy', 5.99, 100), ('Spatula', 1.00, 80)", fixtures => {
-          if (fixtures.failed)
-            throw new RuntimeException(fixtures.cause())
-
-          done.handle(null)
-        })
-      })
-    })
+    vertx
+      .createHttpServer
+      .requestHandler(router.accept(_))
+      .listen(8080)
   }
 }
 
 protected trait PersistenceLike {
-  protected val h2Config: Config = model.persistence.ConfigParse.config.getConfig("h2")
+  protected val h2Config: Config = ConfigParse.config.getConfig("h2")
   protected val dataSource: Config = h2Config.getConfig("dataSource")
   protected val url: String = dataSource.getString("url")
   protected val h2Server: Server = org.h2.tools.Server.createTcpServer("-baseDir", "./h2data")
@@ -124,6 +76,12 @@ protected trait PersistenceLike {
   val resourcePath = "evolutions/1.sql" // for accessing evolution file as a resource from a jar
   val fallbackPath = s"src/main/resources/$resourcePath" // for testing this project
   val processEvolution = new ProcessEvolution(resourcePath, fallbackPath)
+
+  val downsLines: Seq[String] = processEvolution.downsLines(Ctx)
+  val upsLines: Seq[String]   = processEvolution.upsLines(Ctx)
+  println(downsLines.mkString("Downs: ", "\n", ""))
+  println(upsLines.mkString("Ups: ", "\n", ""))
+
   processEvolution.downs(Ctx) // just in case something was left over from last time
   processEvolution.ups(Ctx)
 }
@@ -132,68 +90,48 @@ protected trait Routes {
   val routeStem = "/products"
 }
 
-protected trait RouteHandlers {
-  // todo use quill instead of raw sql
+protected trait RouteHandlers extends IdImplicitLike {
   protected def handleGetProduct(routingContext: RoutingContext): Unit = {
-    val productID: Option[String] = routingContext.request.getParam("productID")
     val response: HttpServerResponse = routingContext.response
-    if (productID.isEmpty) {
-      sendError(400, response)
-    } else productID.map { id =>
-      val conn: SQLConnection = routingContext.get("conn")
-      conn.queryWithParams(
-        "SELECT id, name, price, weight FROM products where id = ?",
-        new JsonArray().add(Integer.parseInt(id)),
-        query => {
-          if (query.failed()) {
-            sendError(500, response)
-          } else {
-            if (query.result.asJava.getNumRows == 0) {
-              sendError(404, response)
-            } else {
-              response
-                .putHeader("content-type", "application/json")
-                .end(query.result.asJava.getRows.get(0).encode)
-            }
-          }
-        }
-      )
-    }.get
+    val result: Option[Unit] = for {
+      id      <- routingContext.request.getParam("productID")
+      product <- Products._findById(id.toId)
+    } yield {
+      response
+        .putHeader("content-type", "application/json")
+        .end(product.toString)
+    }
+    result.getOrElse(sendError(400, response))
   }
 
-  // todo use quill instead of raw sql
   protected def handleAddProduct(routingContext: RoutingContext): Unit = {
     val response: HttpServerResponse = routingContext.response
-    val conn: SQLConnection = routingContext.get("conn")
-    routingContext.getBodyAsJson foreach { product: JsonObject =>
-      conn.updateWithParams("INSERT INTO products (name, price, weight) VALUES (?, ?, ?)",
-        new JsonArray()
-          .add(product.getString("name"))
-          .add(product.getFloat("price"))
-          .add(product.getInteger("weight")),
-        query => {
-          if (query.failed)
-            sendError(500, response)
-          else
-            response.end
-        }
+    val result: Option[Unit] = for {
+      jsonObject: JsonObject <- routingContext.getBodyAsJson
+    } yield {
+      val product = Product(
+        name = jsonObject.getString("name"),
+        price = jsonObject.getString("price"),
+        weight = jsonObject.getDouble("weight")
       )
+      Products._insert(product)
+      response.end(s"Inserted product: $product")
     }
+    result.getOrElse(sendError(500, response))
   }
 
-  // todo use quill instead of raw sql
   protected def handleListProducts(routingContext: RoutingContext): Unit = {
     val response: HttpServerResponse = routingContext.response
-    val conn: SQLConnection = routingContext.get("conn")
-    conn.query("SELECT id, name, price, weight FROM products", query => {
-      if (query.failed) {
-        sendError(500, response)
-      } else {
-        val arr: JsonArray = new JsonArray()
-        query.result.asJava.getRows.asScala.foreach(arr.add)
-        routingContext.response.putHeader("content-type", "application/json").end(arr.encodePrettily)
-      }
-    })
+    val jsonProducts: Seq[String] = for {
+      product <- Products._findAll
+    } yield product.toJson
+    val json = s"[\n  ${ jsonProducts.mkString(",\n  ") }\n]"
+    if (jsonProducts.isEmpty)
+      sendError(500, response)
+    else
+      response
+        .putHeader("content-type", "application/json")
+        .end(json)
   }
 
   protected def sendError(statusCode: Int, response: HttpServerResponse): Unit =

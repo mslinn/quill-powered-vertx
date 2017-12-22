@@ -15,8 +15,8 @@
  */
 package com.micronautics.vertx
 
-import model.persistence.QuillCacheImplicits
+import _root_.model.persistence.QuillCacheImplicits
 
 case object Ctx extends SelectedCtx with QuillCacheImplicits
 
-trait SelectedCtx extends model.persistence.H2Ctx
+trait SelectedCtx extends _root_.model.persistence.H2Ctx
